@@ -1,29 +1,39 @@
 package org.agoncal.quarkus.starting.domain.model.ordering;
 
+import io.quarkus.hibernate.reactive.panache.PanacheEntity;
+import jakarta.persistence.*;
+import org.agoncal.quarkus.starting.domain.model.catalog.Book;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-    public class Order {
-        private UUID id;
-        private UUID userId;
-        private List<String> items;
-        private BigDecimal totalPrice;
-        private String status;
+@Entity
+@Table(name = "Orders") // <-- ADD THIS LINE to rename the table to Orders
+public class Order extends PanacheEntity {
 
-        public Order(UUID userId, List<String> items) {
-            this.id = UUID.randomUUID();
-            this.userId = userId;
-            this.items = items;
-//            this.totalPrice = calculateTotal(items);
-//            this.status = OrderStatus.PENDING;
-        }
+    private UUID userId;
+    // FIX: Add the @ManyToMany annotation
+    @ManyToMany
+    @JoinTable(name = "Orders_Books_Junction") // Optional: Renames the join table
+    private List<Book> books;
 
-//        private BigDecimal calculateTotal(List<String> items) {
-//            return items.stream()
-//                    .map(OrderItem::getPrice)
-//                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-//        }
+    private BigDecimal totalPrice;
+    private OrderStatus status;
+
+    public Order(UUID userId, List<Book> books) {
+        this.userId = userId;
+        this.books = books;
+        this.totalPrice = calculateTotal(books);
+        this.status = OrderStatus.PENDING;
     }
+
+    public Order() {
+    }
+
+    private BigDecimal calculateTotal(List<Book> books) {
+        return books.stream().map(book -> book.price).map(BigDecimal::valueOf).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+}
 
 
